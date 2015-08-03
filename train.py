@@ -111,6 +111,7 @@ if __name__ == '__main__':
     features = T.matrix('features', dtype=theano.config.floatX)
     cost = dpm.cost(features)
     blocks_model = Model(cost)
+
     cg_nodropout = ComputationGraph(cost)
     if args.dropout_rate > 0:
         # DEBUG this triggers an error on my machine
@@ -123,8 +124,7 @@ if __name__ == '__main__':
         cg = cg_nodropout
     step_compute = RMSProp(learning_rate=args.lr, max_scaling=1e10)
     algorithm = GradientDescent(step_rule=CompositeRule([RemoveNotFinite(),
-        step_compute]),
-        params=cg.parameters, cost=cost)
+        step_compute]), parameters=cg.parameters, cost=cost)
     extension_list = []
     extension_list.append(
         SharedVariableModifier(step_compute.learning_rate,
@@ -153,9 +153,9 @@ if __name__ == '__main__':
     extension_list.append(
         extensions.PlotParameters(dpm, blocks_model, model_dir,
             every_n_epochs=args.ext_every_n, before_training=args.plot_before_training))
-    extension_list.append(
-        extensions.PlotGradients(dpm, blocks_model, algorithm, train_batch, model_dir,
-            every_n_epochs=args.ext_every_n, before_training=args.plot_before_training))
+#    extension_list.append(
+#        extensions.PlotGradients(dpm, blocks_model, algorithm, train_batch, model_dir,
+#            every_n_epochs=args.ext_every_n, before_training=args.plot_before_training))
     # console monitors
     # # DEBUG -- incorporating train_monitor or test_monitor triggers a large number of
     # # float64 vs float32 GPU warnings, although monitoring still works. I think this is a Blocks

@@ -77,7 +77,7 @@ class PlotGradients(SimpleExtension):
         self.model = model
         self.blocks_model = blocks_model
         gradients = []
-        for param_name in sorted(self.blocks_model.params.keys()):
+        for param_name in sorted(self.blocks_model.parameters.keys()):
             gradients.append(algorithm.gradients[self.blocks_model.params[param_name]])
         self.grad_f = theano.function(algorithm.inputs, gradients, allow_input_downcast=True)
 
