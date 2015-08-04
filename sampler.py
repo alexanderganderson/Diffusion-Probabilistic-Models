@@ -15,9 +15,11 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
     logr_grad : function handle
         function handle to d/dx log r(x), where we
         mix in r(x^(t)) = r(x=x^(t)) ** (T-t)/T into the diffusion
-        where x is the size of the image
+        where x is the image
     trajectory_length : int
         Length of the trajectory
+
+    
     """
     mu, sigma = get_mu_sigma(Xmid, np.array([[t]]))
 
@@ -26,7 +28,7 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
 
     if logr_grad is not None:
         mu += sigma * logr_grad(Xmid) * (trajectory_length - t) / (1. * trajectory_length)
-
+        # note mu, sigma have dimension (n_samples, n_colors, spatial_width, spatial_width)
     if denoise_sigma is not None:
         sigma_new = (sigma**-2 + denoise_sigma**-2)**-0.5
         mu_new = mu * sigma_new**2 * sigma**-2 + XT * sigma_new**2 * denoise_sigma**-2
@@ -75,6 +77,8 @@ def generate_samples(model, get_mu_sigma,
         mask = generate_inpaint_mask(n_samples, n_colors, spatial_width)
         XT.flat[mask] = X_true.flat[mask]
         base_fname_part1 += '_inpaint'
+    if logr_grad is not None:
+        base_fname_part1 += '_logrperturb'
     else:
         mask = None
 
