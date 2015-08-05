@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     if args.resume_file is not None:
         print "Resuming training from " + args.resume_file
-        from blocks.scripts import continue_training
+        from blocks.serialization import continue_training
         continue_training(args.resume_file)
 
     ## load the training data
