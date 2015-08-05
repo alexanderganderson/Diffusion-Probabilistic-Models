@@ -3,7 +3,7 @@ import numpy as np
 import viz
 
 def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng, 
-                   trajectory_length, logr_grad = None):
+                   trajectory_length, logr_grad):
     """
     Run a single reverse diffusion step
     
@@ -54,10 +54,10 @@ def generate_inpaint_mask(n_samples, n_colors, spatial_width):
 
 
 def generate_samples(model, get_mu_sigma,
-            n_samples=36, inpaint=False, denoise_sigma=None, logr_grad=None,
-            X_true=None,
-            base_fname_part1="samples", base_fname_part2='',
-            num_intermediate_plots=4, seed=12345):
+                     n_samples=36, inpaint=False, denoise_sigma=None, 
+                     logr_grad=None, X_true=None,
+                     base_fname_part1="samples", base_fname_part2='',
+                     num_intermediate_plots=4, seed=12345):
     """
     Run the reverse diffusion process (generative model).
     """

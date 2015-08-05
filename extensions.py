@@ -1,4 +1,4 @@
-"""
+o"""
 Extensions called during training to generate samples and diagnostic plots and printouts.
 """
 
@@ -14,7 +14,7 @@ from blocks.extensions import SimpleExtension
 
 import viz
 import sampler
-import classifier
+import perturb
 
 
 class PlotSamples(SimpleExtension):
@@ -41,7 +41,7 @@ class PlotSamples(SimpleExtension):
         self.get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
             allow_input_downcast=True)
         if perturbation_kernel:
-            self.logr_grad = None # FIXME
+            self.logr_grad = perturb.get_logr_grad()
         else:
             # Sets a default value to have r(x) = 0
             self.logr_grad = lambda x: np.zeros_like(self.X).astype(theano.config.floatX)
