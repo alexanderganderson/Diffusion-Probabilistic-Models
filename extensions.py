@@ -41,6 +41,7 @@ class PlotSamples(SimpleExtension):
         t = T.matrix('t samp', dtype=theano.config.floatX)
         self.get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
             allow_input_downcast=True)
+        perturbation_kernel = False # FIXME, hard coded
         if perturbation_kernel:
             self.logr_grad = perturb.get_logr_grad()
         else:
