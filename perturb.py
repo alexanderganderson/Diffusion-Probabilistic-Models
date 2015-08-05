@@ -1,7 +1,8 @@
 """
 We can perturb the diffusion kernel by an arbitrary function r(x), so that
 we now sample from p^tilde(x) = (1 / Z) r(x) p(x). Here, we prepare such a function
-where r(x) is a classifier of the form r(x) = p(y_0|x)
+where r(x) is a classifier of the form r(x) = p(y_0|x), and we mix in the perturbation
+as r(x^t) = r(x) ** (T-t)/T
 """
 
 """
@@ -143,15 +144,27 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     # Initialize the training set
     train = CIFAR10(("train",))
+    test = CIFAR10(("test",))
+
     train_stream = DataStream.default_stream(
         train, iteration_scheme=ShuffledScheme(
             train.num_examples, batch_size))
 
-    test = CIFAR10(("test",))
     test_stream = DataStream.default_stream(
         test,
         iteration_scheme=ShuffledScheme(
             test.num_examples, batch_size))
+
+    
+    # make the training data 0 mean and variance 1
+    # TODO compute mean and variance on full dataset, not minibatch
+    Xbatch = next(train_stream.get_epoch_iterator())[0]
+    scl = 1./np.sqrt(np.mean((Xbatch-np.mean(Xbatch))**2))
+    shft = -np.mean(Xbatch*scl)
+    # scale is applied before shift
+    train_stream = ScaleAndShift(train_stream, scl, shft)
+    test_stream = ScaleAndShift(test_stream, scl, shft)
+
 
     # ConvMLP Parameters
     image_size = (32, 32)
@@ -215,7 +228,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     vs1 = vs1[0: -2] # Only first two layers
     cg = apply_dropout(cg, vs1, 0.5)
 
-    # Train with simple SGD
+    # Train with AdaDelta
     algorithm = GradientDescent(
         cost=cost, parameters=cg.parameters,
         step_rule=AdaDelta())
@@ -253,7 +266,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
 
 
-def build_classifier_grad(classifier_fn='mlp.zip', label=2):
+def build_classifier_grad(classifier_fn='convmlp_cifar10.zip', label=2):
     """
     Loads a classifier, and builds functions p(y_label|x) and
         d p(y_label|x)/dx where x is the image
@@ -277,7 +290,7 @@ def build_classifier_grad(classifier_fn='mlp.zip', label=2):
     
     # Note y_hat vectorized giving an output shaped (batches, labels), 
     pk_grad = theano.gradient.jacobian(tensor.log(y_hat[:, label]), x)
-    # should make this more efficient using scan.. does dy[i]/dx[j]
+    # FIXME: does dy[i]/dx[j] instead of dy[i]/dx[i]
 
     pk_grad_func1 = theano.function(inputs=[x],
                                    outputs=pk_grad) 
@@ -295,6 +308,13 @@ def build_classifier_grad(classifier_fn='mlp.zip', label=2):
                                    outputs=y_hat[:, label])
 
     return pk_prob_func, pk_grad_func
+
+def get_logr_grad(label=2):
+    """
+    Interface to extensions.py which asks for this function
+    """
+    return build_classifier_grad(label=label)
+
 
 """
     if args.dataset == 'mnist':

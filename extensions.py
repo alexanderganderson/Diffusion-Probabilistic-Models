@@ -43,9 +43,10 @@ class PlotSamples(SimpleExtension):
             allow_input_downcast=True)
         perturbation_kernel = False # FIXME, hard coded
         if perturbation_kernel:
-            self.logr_grad = perturb.get_logr_grad()
+            self.r, self.logr_grad = perturb.get_logr_grad()
         else:
             # Sets a default value to have r(x) = 0
+            self.r = lambda x: np.zeros((self.X.shape[0],))
             self.logr_grad = lambda x: np.zeros_like(self.X).astype(theano.config.floatX)
 
     def do(self, callback_name, *args):
