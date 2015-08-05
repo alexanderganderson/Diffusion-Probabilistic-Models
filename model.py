@@ -26,6 +26,7 @@ class DiffusionModel(Initializable):
             n_layers_dense_lower=4,
             n_layers_dense_upper=2,
             n_t_per_minibatch=1,
+            n_scales=1,
             step1_beta=0.001):
         """
         Implements the objective function and mu and sigma estimators for a Gaussian diffusion
@@ -60,15 +61,15 @@ class DiffusionModel(Initializable):
         super(DiffusionModel, self).__init__()
 
         self.n_t_per_minibatch = n_t_per_minibatch
-        self.spatial_width = spatial_width
-        self.n_colors = n_colors
+        self.spatial_width = np.int16(spatial_width)
+        self.n_colors = np.int16(n_colors)
         self.n_temporal_basis = n_temporal_basis
         self.trajectory_length = trajectory_length
 
         self.mlp = regression.MLP_conv_dense(
             n_layers_conv, n_layers_dense_lower, n_layers_dense_upper,
             n_hidden_conv, n_hidden_dense_lower, n_hidden_dense_lower_output, n_hidden_dense_upper,
-            spatial_width, n_colors, n_temporal_basis)
+            spatial_width, n_colors, n_scales, n_temporal_basis)
         self.temporal_basis = self.generate_temporal_basis(trajectory_length, n_temporal_basis)
         self.beta_arr = self.generate_beta_arr(step1_beta)
         self.children = [self.mlp]
@@ -110,7 +111,7 @@ class DiffusionModel(Initializable):
         (if t is not an integer, the weights will linearly interpolate)
         """
         n_seg = self.trajectory_length
-        t_compare = T.arange(n_seg).reshape((1,n_seg))
+        t_compare = T.arange(n_seg, dtype=theano.config.floatX).reshape((1,n_seg))
         diff = abs(T.addbroadcast(t,1) - T.addbroadcast(t_compare,0))
         t_weights = T.max(T.join(1, (-diff+1).reshape((n_seg,1)), T.zeros((n_seg,1))), axis=1)
         return t_weights.reshape((-1,1))
@@ -163,7 +164,7 @@ class DiffusionModel(Initializable):
         # X_noiseless -= T.mean(X_noiseless)
         # X_noiseless /= T.std(X_noiseless)
 
-        n_images = X_noiseless.shape[0]
+        n_images = X_noiseless.shape[0].astype('int16')
         rng = Random().theano_rng
         # choose a timestep in [1, self.trajectory_length-1].
         # note the reverse process is fixed for the very
@@ -238,12 +239,12 @@ class DiffusionModel(Initializable):
                 + (sigma_posterior**2 + (mu_posterior-mu)**2)/(2*sigma**2)
                 - 0.5)
         # conditional entropies H_q(x^T|x^0) and H_q(x^1|x^0)
-        H_startpoint = 0.5*(1 + np.log(2.*np.pi)).astype(theano.config.floatX) + 0.5*T.log(self.beta_arr[0])
-        H_endpoint = 0.5*(1 + np.log(2.*np.pi)).astype(theano.config.floatX) + 0.5*T.log(self.get_beta_full_trajectory())
-        H_prior = 0.5*(1 + np.log(2.*np.pi)).astype(theano.config.floatX) + 0.5*T.log(T.exp(1.))
+        H_startpoint = (0.5*(1 + np.log(2.*np.pi))).astype(theano.config.floatX) + 0.5*T.log(self.beta_arr[0])
+        H_endpoint = (0.5*(1 + np.log(2.*np.pi))).astype(theano.config.floatX) + 0.5*T.log(self.get_beta_full_trajectory())
+        H_prior = (0.5*(1 + np.log(2.*np.pi))).astype(theano.config.floatX) + 0.5*T.log(T.exp(1.))
         negL_bound = KL*self.trajectory_length + H_startpoint - H_endpoint + H_prior
         # the negL_bound if this was an isotropic Gaussian model of the data
-        negL_gauss = 0.5*(1 + np.log(2.*np.pi)).astype(theano.config.floatX)
+        negL_gauss = (0.5*(1 + np.log(2.*np.pi))).astype(theano.config.floatX)
         negL_diff = negL_bound - negL_gauss
         L_diff_bits = negL_diff / T.log(2.)
         L_diff_bits_avg = L_diff_bits.mean()*self.n_colors
@@ -295,7 +296,7 @@ class DiffusionModel(Initializable):
         Z contains coefficients for spatial basis functions for each pixel for
         both mu and sigma.
         """
-        n_images = Z.shape[0]
+        n_images = Z.shape[0].astype('int16')
         t_weights = self.get_t_weights(t)
         Z = Z.reshape((n_images, self.spatial_width, self.spatial_width,
             self.n_colors, 2, self.n_temporal_basis))
