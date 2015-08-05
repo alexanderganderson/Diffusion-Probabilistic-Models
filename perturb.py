@@ -276,7 +276,7 @@ def build_classifier_grad(classifier_fn='mlp.zip', label=2):
     y_hat = classifier_brick.apply(x)
     
     # Note y_hat vectorized giving an output shaped (batches, labels), 
-    pk_grad = theano.gradient.jacobian(y_hat[:, label], x)
+    pk_grad = theano.gradient.jacobian(tensor.log(y_hat[:, label]), x)
     # should make this more efficient using scan.. does dy[i]/dx[j]
 
     pk_grad_func1 = theano.function(inputs=[x],
