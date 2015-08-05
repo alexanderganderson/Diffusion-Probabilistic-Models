@@ -75,7 +75,7 @@ class PlotSamples(SimpleExtension):
         # Perturbation Kernel
         sampler.generate_samples(self.model, self.get_mu_sigma, 
             n_samples=self.n_samples, inpaint=False, denoise_sigma=None,
-            logr_grad=self.logr_grad, X_true=self.X
+            logr_grad=self.logr_grad, X_true=self.X,
             base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
             
 
