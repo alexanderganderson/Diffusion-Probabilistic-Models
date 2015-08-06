@@ -261,13 +261,13 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         extensions=extensions)
 
     main_loop.run()
-    classifier_fn = 'convmlp_cifar10.zip'
+    classifier_fn = 'models/convmlp_cifar10.zip'
     with open(classifier_fn, 'w') as f:
         dump(convnet, f)    
 
 
 
-def build_classifier_grad(classifier_fn='convmlp_cifar10.zip', label=2):
+def build_classifier_grad(classifier_fn='models/convmlp_cifar10.zip', label=2):
     """
     Loads a classifier, and builds functions p(y_label|x) and
         d p(y_label|x)/dx where x is the image

@@ -12,7 +12,7 @@ import perturb
 import sampler
 import util
 
-fn = 'models/model.pkl'
+fn = 'models/model_cifar.pkl'
 save_path = 'output'
 n_samples = 49
 batch_size = 200
