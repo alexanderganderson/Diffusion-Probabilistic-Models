@@ -11,6 +11,7 @@ from fuel.schemes import ShuffledScheme
 from fuel.transformers import Flatten, ScaleAndShift
 
 import perturb
+from perturb import ConvMLP
 import sampler
 import util
 
