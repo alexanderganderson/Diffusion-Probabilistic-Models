@@ -4,6 +4,7 @@ The goal of this script is to load the .pkl version of a model and run a sampler
 import cPickle as pkl
 import theano.tensor as T
 import theano
+import numpy as np
 
 from fuel.streams import DataStream
 from fuel.schemes import ShuffledScheme
