@@ -156,16 +156,16 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         iteration_scheme=ShuffledScheme(
             test.num_examples, batch_size))
 
-    """
+
     # make the training data 0 mean and variance 1
     # TODO compute mean and variance on full dataset, not minibatch
     Xbatch = next(train_stream.get_epoch_iterator())[0]
     scl = (1./np.sqrt(np.mean((Xbatch-np.mean(Xbatch))**2))).astype('float32')
     shft = (-np.mean(Xbatch*scl)).astype('float32')
     # scale is applied before shift
-    train_stream = ScaleAndShift(train_stream, scl, shft)
-    test_stream = ScaleAndShift(test_stream, scl, shft)
-    """
+    train_stream = ScaleAndShift(train_stream, scl, shft, which_sources=('features',))
+    test_stream = ScaleAndShift(test_stream, scl, shft, which_sources=('features',))
+
 
     # ConvMLP Parameters
     image_size = (32, 32)
