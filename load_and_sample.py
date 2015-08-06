@@ -78,7 +78,7 @@ r, logr_grad = perturb.get_logr_grad()
 
 sampler.generate_samples(model, get_mu_sigma, 
                n_samples=n_samples, inpaint=False, denoise_sigma=None,
-               logr_grad=self.logr_grad, X_true=self.X,
+               logr_grad=logr_grad, X_true=X,
                base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
 
 sampler.generate_samples(model, get_mu_sigma,
