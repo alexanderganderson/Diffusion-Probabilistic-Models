@@ -294,7 +294,8 @@ def build_classifier_grad(classifier_fn='convmlp_cifar10.zip', label=2):
     # FIXME: does dy[i]/dx[j] instead of dy[i]/dx[i]
 
     pk_grad_func1 = theano.function(inputs=[x],
-                                   outputs=pk_grad) 
+                                    outputs=pk_grad,
+                                    allow_input_downcast=True) 
 
     def pk_grad_func(x):
         """
