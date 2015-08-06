@@ -26,7 +26,7 @@ from fuel.transformers import Flatten, ScaleAndShift
 import extensions
 import model
 import util
-from perturb import ConvMLP
+from perturb import ConvMLP # r(x) block needs to be in namespace
 
 def parse_args():
     parser = argparse.ArgumentParser()
