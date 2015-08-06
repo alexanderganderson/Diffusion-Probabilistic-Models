@@ -81,10 +81,11 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
         mask = generate_inpaint_mask(n_samples, n_colors, spatial_width)
         XT.flat[mask] = X_true.flat[mask]
         base_fname_part1 += '_inpaint'
-    if logr_grad is not None:
-        base_fname_part1 += '_logrperturb'
     else:
         mask = None
+    if logr_grad is not None:
+        base_fname_part1 += '_logrperturb'
+
 
     if X_true is not None:
         viz.plot_images(X_true, base_fname_part1 + '_true' + base_fname_part2)

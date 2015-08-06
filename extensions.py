@@ -57,6 +57,11 @@ class PlotSamples(SimpleExtension):
         print "generating samples"
         base_fname_part1 = self.path + '/samples-'
         base_fname_part2 = '_batch%06d'%self.main_loop.status['iterations_done']
+        # Perturbation Kernel
+        sampler.generate_samples(self.model, self.get_mu_sigma, 
+            n_samples=self.n_samples, inpaint=False, denoise_sigma=None,
+            logr_grad=self.logr_grad, X_true=self.X,
+            base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
         # Basic Sampler
         sampler.generate_samples(self.model, self.get_mu_sigma,
             n_samples=self.n_samples, inpaint=False, denoise_sigma=None, 
@@ -72,11 +77,7 @@ class PlotSamples(SimpleExtension):
             n_samples=self.n_samples, inpaint=False, denoise_sigma=1, 
             logr_grad=None, X_true=self.X,
             base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
-        # Perturbation Kernel
-        sampler.generate_samples(self.model, self.get_mu_sigma, 
-            n_samples=self.n_samples, inpaint=False, denoise_sigma=None,
-            logr_grad=self.logr_grad, X_true=self.X,
-            base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
+
             
 
 

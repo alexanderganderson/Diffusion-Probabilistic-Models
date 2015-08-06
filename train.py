@@ -48,7 +48,7 @@ def parse_args():
                         help='Rate to use for dropout during training+testing.')
     parser.add_argument('--dataset', type=str, default='MNIST',
                         help='Name of dataset to use.')
-    parser.add_argument('--plot_before_training', type=bool, default=False,
+    parser.add_argument('--plot_before_training', type=bool, default=True,
                         help='Save diagnostic plots at epoch 0, before any training.')
     args = parser.parse_args()
 

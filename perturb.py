@@ -15,7 +15,7 @@ Applied to CIFAR10
 Based off of Lenet code in github.com/mila-udem/blocks-examples/mnist_lenet
 """
 import logging
-import numpy
+import numpy as np
 from argparse import ArgumentParser
 
 from theano import tensor
@@ -43,7 +43,7 @@ from blocks.serialization import dump, load
 from fuel.datasets import CIFAR10
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
-
+from fuel.transformers import Flatten, ScaleAndShift
 
 class ConvMLP(FeedforwardSequence, Initializable):
     """LeNet-like convolutional network.
@@ -136,7 +136,7 @@ class ConvMLP(FeedforwardSequence, Initializable):
         conv_out_dim = self.conv_sequence.get_dim('output')
 
         self.top_mlp.activations = self.top_mlp_activations
-        self.top_mlp.dims = [numpy.prod(conv_out_dim)] + self.top_mlp_dims
+        self.top_mlp.dims = [np.prod(conv_out_dim)] + self.top_mlp_dims
 
 
 def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
@@ -155,12 +155,12 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         iteration_scheme=ShuffledScheme(
             test.num_examples, batch_size))
 
-    
+
     # make the training data 0 mean and variance 1
     # TODO compute mean and variance on full dataset, not minibatch
     Xbatch = next(train_stream.get_epoch_iterator())[0]
-    scl = 1./np.sqrt(np.mean((Xbatch-np.mean(Xbatch))**2))
-    shft = -np.mean(Xbatch*scl)
+    scl = (1./np.sqrt(np.mean((Xbatch-np.mean(Xbatch))**2))).astype('float32')
+    shft = (-np.mean(Xbatch*scl)).astype('float32')
     # scale is applied before shift
     train_stream = ScaleAndShift(train_stream, scl, shft)
     test_stream = ScaleAndShift(test_stream, scl, shft)
@@ -301,7 +301,7 @@ def build_classifier_grad(classifier_fn='convmlp_cifar10.zip', label=2):
         """
         res = pk_grad_func1(x)
         n_s = res.shape[0]
-        di = numpy.diag_indices(n_s)
+        di = np.diag_indices(n_s)
         return res[di]
     
     pk_prob_func = theano.function(inputs=[x],
