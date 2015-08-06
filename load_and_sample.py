@@ -35,11 +35,11 @@ spatial_width = 32
 train_stream = Flatten(DataStream.default_stream(dataset_train,
                               iteration_scheme=ShuffledScheme(
                                   examples=dataset_train.num_examples,
-                                  batch_size=args.batch_size)))
+                                  batch_size=batch_size)))
 test_stream = Flatten(DataStream.default_stream(dataset_test,
                              iteration_scheme=ShuffledScheme(
                                  examples=dataset_test.num_examples,
-                                 batch_size=args.batch_size)))
+                                 batch_size=batch_size)))
 
 # make the training data 0 mean and variance 1
 Xbatch = next(train_stream.get_epoch_iterator())[0]
