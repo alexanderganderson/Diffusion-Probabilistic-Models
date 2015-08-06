@@ -51,15 +51,19 @@ test_stream = ScaleAndShift(test_stream, scl, shft)
 X = next(test_stream.get_epoch_iterator())[0]
 n_samples = np.min([n_samples, X.shape[0]])
 
+
 X = X[:n_samples].reshape(
-    (n_samples, model.n_colors, model.spatial_width, model.spatial_width))
+    (n_samples, n_colors, spatial_width, spatial_width))
 
 
 
-X_noisy = T.tensor4('X noisy samp', dtype=theano.config.floatX)
-t = T.matrix('t samp', dtype=theano.config.floatX)
-get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
-                               allow_input_downcast=True)
+#X_noisy = T.tensor4('X noisy samp', dtype=theano.config.floatX)
+#t = T.matrix('t samp', dtype=theano.config.floatX)
+#get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
+#                               allow_input_downcast=True)
+
+# FIXME: EWWW
+get_mu_sigma = main_loop.extensions[6].get_mu_sigma
 
 
 r, logr_grad = perturb.get_logr_grad()
