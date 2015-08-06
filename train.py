@@ -26,6 +26,7 @@ from fuel.transformers import Flatten, ScaleAndShift
 import extensions
 import model
 import util
+from perturb import ConvMLP
 
 def parse_args():
     parser = argparse.ArgumentParser()

@@ -18,6 +18,7 @@ import logging
 import numpy as np
 from argparse import ArgumentParser
 
+import theano
 from theano import tensor
 
 from blocks.algorithms import GradientDescent, Scale, AdaDelta
@@ -155,7 +156,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         iteration_scheme=ShuffledScheme(
             test.num_examples, batch_size))
 
-
+    """
     # make the training data 0 mean and variance 1
     # TODO compute mean and variance on full dataset, not minibatch
     Xbatch = next(train_stream.get_epoch_iterator())[0]
@@ -164,7 +165,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     # scale is applied before shift
     train_stream = ScaleAndShift(train_stream, scl, shft)
     test_stream = ScaleAndShift(test_stream, scl, shft)
-
+    """
 
     # ConvMLP Parameters
     image_size = (32, 32)
@@ -285,7 +286,7 @@ def build_classifier_grad(classifier_fn='convmlp_cifar10.zip', label=2):
     with open(classifier_fn, 'r') as f:
         classifier_brick = load(f)
 
-    x = T.tensor4('features')
+    x = theano.tensor.tensor4('features')
     y_hat = classifier_brick.apply(x)
     
     # Note y_hat vectorized giving an output shaped (batches, labels), 
@@ -305,7 +306,8 @@ def build_classifier_grad(classifier_fn='convmlp_cifar10.zip', label=2):
         return res[di]
     
     pk_prob_func = theano.function(inputs=[x],
-                                   outputs=y_hat[:, label])
+                                   outputs=y_hat[:, label],
+                                   allow_input_downcast=True)
 
     return pk_prob_func, pk_grad_func
 
