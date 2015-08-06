@@ -24,7 +24,10 @@ print "generating samples"
 base_fname_part1 = save_path + '/samples-'
 base_fname_part2 = '_batch%06d'%main_loop.status['iterations_done']
 
-model = main_loop.model
+# FIXME: eww, we want PlotSamples extensions
+plotsamples_ext = main_loop.extensions[6]
+
+model = plotsamples_ext.model
 
 from fuel.datasets import CIFAR10
 dataset_train = CIFAR10(['train'], sources=('features',))
@@ -53,7 +56,7 @@ n_samples = np.min([n_samples, X.shape[0]])
 
 
 X = X[:n_samples].reshape(
-    (n_samples, n_colors, spatial_width, spatial_width))
+    (n_samples, model.n_colors, model.spatial_width, model.spatial_width))
 
 
 
@@ -62,8 +65,7 @@ X = X[:n_samples].reshape(
 #get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
 #                               allow_input_downcast=True)
 
-# FIXME: EWWW
-get_mu_sigma = main_loop.extensions[6].get_mu_sigma
+get_mu_sigma = plotsamples_ext.get_mu_sigma
 
 
 r, logr_grad = perturb.get_logr_grad()
