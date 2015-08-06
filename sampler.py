@@ -29,7 +29,9 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
         print 'unverified behavior with denoise_sigma and logr_grad both on'
 
     if logr_grad is not None:
-        mu += (sigma * logr_grad(Xmid) * (trajectory_length - t) 
+#        mu += (sigma * logr_grad(Xmid) * (trajectory_length - t) 
+#               / (1. * trajectory_length))
+        mu += -(sigma * logr_grad(mu) * (trajectory_length - t) 
                / (1. * trajectory_length))
         # note mu, sigma have dimension 
         # (n_samples, n_colors, spatial_width, spatial_width)

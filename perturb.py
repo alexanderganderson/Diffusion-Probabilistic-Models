@@ -7,8 +7,10 @@ as r(x^t) = r(x) ** (T-t)/T
 
 """
 Convolutional network
-Run the training for 50 epochs with
-python perturb.py --num-epochs 50
+Run the training of a classifier by doing:
+python perturb.py --num-epochs 50 --dataset <dataset>
+saves a file 'convmlp_<dataset>.zip'
+that is subsequently loaded to build the gradient function. 
 ```
 Series of convolutional layers followed by a MLP
 Applied to CIFAR10
@@ -141,11 +143,34 @@ class ConvMLP(FeedforwardSequence, Initializable):
 
 
 def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
-         conv_sizes=None, pool_sizes=None, batch_size=500):
+         conv_sizes=None, pool_sizes=None, batch_size=500, dataset='MNIST'):
 
+    print 'The dataset is ' + args.dataset
     # Initialize the training set
-    train = CIFAR10(("train",))
-    test = CIFAR10(("test",))
+    if dataset == 'MNIST':
+        from fuel.datasets import MNIST
+        dataset_train = MNIST(['train'])
+        dataset_test = MNIST(['test'])
+        n_colors = 1
+        spatial_width = 28
+    elif dataset == 'CIFAR10':
+        from fuel.datasets import CIFAR10
+        dataset_train = CIFAR10(['train'])
+        dataset_test = CIFAR10(['test'])
+        n_colors = 3
+        spatial_width = 32
+    elif dataset == 'IMAGENET':
+        from imagenet_data import IMAGENET
+        spatial_width = 128
+        dataset_train = IMAGENET(['train'], width=spatial_width)
+        dataset_test = IMAGENET(['test'], width=spatial_width)
+        n_colors = 3
+    else:
+        raise ValueError("Unknown dataset %s."%args.dataset)
+
+
+    train = dataset_train
+    test = dataset_test
 
     train_stream = DataStream.default_stream(
         train, iteration_scheme=ShuffledScheme(
@@ -168,8 +193,8 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
 
     # ConvMLP Parameters
-    image_size = (32, 32)
-    num_channels = 3
+    image_size = (spatial_width, spatial_width)
+    num_channels = n_colors
     num_conv = 3 # Number of Convolutional Layers
     if feature_maps is None:
         feature_maps = [20, 30, 30]
@@ -261,13 +286,13 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         extensions=extensions)
 
     main_loop.run()
-    classifier_fn = 'models/convmlp_cifar10.zip'
+    classifier_fn = 'models/convmlp_' + dataset + '.zip'
     with open(classifier_fn, 'w') as f:
         dump(convnet, f)    
 
 
 
-def build_classifier_grad(classifier_fn='models/convmlp_cifar10.zip', label=2):
+def build_classifier_grad(dataset, label=2):
     """
     Loads a classifier, and builds functions p(y_label|x) and
         d p(y_label|x)/dx where x is the image
@@ -283,6 +308,7 @@ def build_classifier_grad(classifier_fn='models/convmlp_cifar10.zip', label=2):
     FIXME: probably the case that you need to load in the relevant bricks
             modules to open the classifier file
     """
+    classifier_fn = 'models/convmlp_' + dataset + '.zip'
     with open(classifier_fn, 'r') as f:
         classifier_brick = load(f)
 
@@ -312,11 +338,11 @@ def build_classifier_grad(classifier_fn='models/convmlp_cifar10.zip', label=2):
 
     return pk_prob_func, pk_grad_func
 
-def get_logr_grad(label=2):
+def get_logr_grad(dataset, label=2):
     """
     Interface to extensions.py which asks for this function
     """
-    return build_classifier_grad(label=label)
+    return build_classifier_grad(dataset, label=label)
 
 
 """
@@ -334,15 +360,14 @@ def get_logr_grad(label=2):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    parser = ArgumentParser("An example of training a convolutional network "
-                            "on CIFAR10.")
+    parser = ArgumentParser("An example of training a convolutional network ")
     parser.add_argument("--num-epochs", type=int, default=2,
                         help="Number of training epochs to do.")
     parser.add_argument("save_to", default="classifier_model.pkl", nargs="?",
                         help="Destination to save the state of the training "
                              "process.")
     parser.add_argument("--feature-maps", type=int, nargs='+',
-                        default=[32, 32, 64], help="List of feature maps numbers.")
+                        default=[32, 32, 32], help="List of feature maps numbers.")
     parser.add_argument("--mlp-hiddens", type=int, nargs='+', default=[64],
                         help="List of numbers of hidden units for the MLP.")
     parser.add_argument("--conv-sizes", type=int, nargs='+', default=[5, 5, 5],
@@ -354,5 +379,7 @@ if __name__ == "__main__":
                              "--conv-sizes.")
     parser.add_argument("--batch-size", type=int, default=512,
                         help="Batch size.")
+    parser.add_argument('--dataset', type=str, default='MNIST',
+                        help='Name of dataset to use.')
     args = parser.parse_args()
     train(**vars(args))

@@ -78,11 +78,13 @@ class PlotSamples(SimpleExtension):
 
             
 class PlotDiffusionSamples(SimpleExtension):
-    def __init__(self, model, algorithm, X, path, n_samples=49, **kwargs):
+    def __init__(self, model, algorithm, X, path, dataset, n_samples=49, **kwargs):
         """
         Generate samples from the model using the perturbation. 
         The do() function is called as an extension during training.
         - Sample from posterior p^tilde(x0) ~ p(x0) * r(x0)
+        dataset : str
+            String saying the name of the dataset
         """
 
         super(PlotSamples, self).__init__(**kwargs)
@@ -97,7 +99,7 @@ class PlotDiffusionSamples(SimpleExtension):
         self.get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
             allow_input_downcast=True)
         if True:
-            self.r, self.logr_grad = perturb.get_logr_grad()
+            self.r, self.logr_grad = perturb.get_logr_grad(dataset)
         else:
             # Sets a default value to have r(x) = 0
             self.r = lambda x: np.zeros((self.X.shape[0],))
