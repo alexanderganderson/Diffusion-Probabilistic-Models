@@ -23,12 +23,12 @@ parser.add_argument('--dataset', type=str, default='MNIST',
 args = parser.parse_args()
 dataset = args.dataset
 
-classifier_fn = 'models/model_' + dataset + '.pkl'
+mainloop_fn = 'models/model_' + dataset + '.pkl'
 save_path = 'output'
 n_samples = 49
 batch_size = 200
 
-with open(classifier_fn, 'r') as f:
+with open(mainloop_fn, 'r') as f:
     main_loop = pkl.load(f)
 
 print "generating samples"
