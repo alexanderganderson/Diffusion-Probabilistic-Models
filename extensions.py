@@ -18,15 +18,13 @@ import perturb
 
 
 class PlotSamples(SimpleExtension):
-    def __init__(self, model, algorithm, X, path, n_samples=49, 
-                 perturbation_kernel=False, **kwargs):
+    def __init__(self, model, algorithm, X, path, n_samples=49,  **kwargs):
         """
         Generate samples from the model. The do() function is called as an extension during training.
-        Generates 4 types of samples:
+        Generates 3 types of samples:
         - Sample from generative model
         - Sample from image denoising posterior distribution (default signal to noise of 1)
         - Sample from image inpainting posterior distribution (inpaint left half of image)
-        - Sample from posterior p^tilde(x0) ~ p(x0) * r(x0)
         """
 
         super(PlotSamples, self).__init__(**kwargs)
@@ -36,18 +34,18 @@ class PlotSamples(SimpleExtension):
         self.X = X[:n_samples].reshape(
             (n_samples, model.n_colors, model.spatial_width, model.spatial_width))
         self.n_samples = n_samples
-        self.perturbation_kernel=perturbation_kernel
+#        self.perturbation_kernel=perturbation_kernel
         X_noisy = T.tensor4('X noisy samp', dtype=theano.config.floatX)
         t = T.matrix('t samp', dtype=theano.config.floatX)
         self.get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
             allow_input_downcast=True)
-        perturbation_kernel = True # FIXME, hard coded
-        if perturbation_kernel:
-            self.r, self.logr_grad = perturb.get_logr_grad()
-        else:
-            # Sets a default value to have r(x) = 0
-            self.r = lambda x: np.zeros((self.X.shape[0],))
-            self.logr_grad = lambda x: np.zeros_like(self.X).astype(theano.config.floatX)
+ #       perturbation_kernel = True # FIXME, hard coded
+ #       if perturbation_kernel:
+ #           self.r, self.logr_grad = perturb.get_logr_grad()
+ #       else:
+ #           # Sets a default value to have r(x) = 0
+ #           self.r = lambda x: np.zeros((self.X.shape[0],))
+ #           self.logr_grad = lambda x: np.zeros_like(self.X).astype(theano.config.floatX)
 
     def do(self, callback_name, *args):
 
@@ -57,11 +55,11 @@ class PlotSamples(SimpleExtension):
         print "generating samples"
         base_fname_part1 = self.path + '/samples-'
         base_fname_part2 = '_batch%06d'%self.main_loop.status['iterations_done']
-        # Perturbation Kernel
-        sampler.generate_samples(self.model, self.get_mu_sigma, 
-            n_samples=self.n_samples, inpaint=False, denoise_sigma=None,
-            logr_grad=self.logr_grad, X_true=self.X,
-            base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
+#        # Perturbation Kernel
+#        sampler.generate_samples(self.model, self.get_mu_sigma, 
+#            n_samples=self.n_samples, inpaint=False, denoise_sigma=None,
+#            logr_grad=self.logr_grad, X_true=self.X,
+#            base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
         # Basic Sampler
         sampler.generate_samples(self.model, self.get_mu_sigma,
             n_samples=self.n_samples, inpaint=False, denoise_sigma=None, 
@@ -79,6 +77,47 @@ class PlotSamples(SimpleExtension):
             base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
 
             
+class PlotDiffusionSamples(SimpleExtension):
+    def __init__(self, model, algorithm, X, path, n_samples=49, **kwargs):
+        """
+        Generate samples from the model using the perturbation. 
+        The do() function is called as an extension during training.
+        - Sample from posterior p^tilde(x0) ~ p(x0) * r(x0)
+        """
+
+        super(PlotSamples, self).__init__(**kwargs)
+        self.model = model
+        self.path = path
+        n_samples = np.min([n_samples, X.shape[0]])
+        self.X = X[:n_samples].reshape(
+            (n_samples, model.n_colors, model.spatial_width, model.spatial_width))
+        self.n_samples = n_samples
+        X_noisy = T.tensor4('X noisy samp', dtype=theano.config.floatX)
+        t = T.matrix('t samp', dtype=theano.config.floatX)
+        self.get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
+            allow_input_downcast=True)
+        if True:
+            self.r, self.logr_grad = perturb.get_logr_grad()
+        else:
+            # Sets a default value to have r(x) = 0
+            self.r = lambda x: np.zeros((self.X.shape[0],))
+            self.logr_grad = lambda x: np.zeros_like(self.X).astype(theano.config.floatX)
+
+    def do(self, callback_name, *args):
+
+        print "generating samples"
+        base_fname_part1 = self.path + '/samples-'
+        base_fname_part2 = '_batch%06d'%self.main_loop.status['iterations_done']
+        # Perturbation Kernel
+        sampler.generate_samples(self.model, self.get_mu_sigma, 
+            n_samples=self.n_samples, inpaint=False, denoise_sigma=None,
+            logr_grad=self.logr_grad, X_true=self.X,
+            base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
+        # Basic Sampler
+        sampler.generate_samples(self.model, self.get_mu_sigma,
+            n_samples=self.n_samples, inpaint=False, denoise_sigma=None, 
+            logr_grad = None, X_true=None,
+            base_fname_part1=base_fname_part1, base_fname_part2=base_fname_part2)
 
 
 
