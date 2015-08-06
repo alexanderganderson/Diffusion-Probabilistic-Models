@@ -25,8 +25,6 @@ base_fname_part1 = save_path + '/samples-'
 base_fname_part2 = '_batch%06d'%main_loop.status['iterations_done']
 
 model = main_loop.model
-get_mu_sigma = theano.function([X_noisy, t], model.get_mu_sigma(X_noisy, t),
-                               allow_input_downcast=True)
 
 from fuel.datasets import CIFAR10
 dataset_train = CIFAR10(['train'], sources=('features',))
