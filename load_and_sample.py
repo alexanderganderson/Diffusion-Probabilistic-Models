@@ -13,15 +13,14 @@ import sampler
 import util
 
 fn = 'models/model.pkl'
-dpm_name = 'output'
-path = dpm_name
+save_path = 'output'
 n_samples = 49
 batch_size = 200
 with open(fn, 'r') as f:
     main_loop = pkl.load(f)
 
 print "generating samples"
-base_fname_part1 = path + '/samples-'
+base_fname_part1 = save_path + '/samples-'
 base_fname_part2 = '_batch%06d'%main_loop.status['iterations_done']
 
 model = main_loop.model
