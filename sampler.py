@@ -31,8 +31,8 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
     if logr_grad is not None:
 #        mu += (sigma * logr_grad(Xmid) * (trajectory_length - t) 
 #               / (1. * trajectory_length))
-        mu += (sigma * logr_grad(mu) * (trajectory_length - t) 
-               / (1. * trajectory_length))
+        mu += (sigma * logr_grad(mu) * (trajectory_length - 1 - t) 
+               / (1. * trajectory_length - 1))
         # note mu, sigma have dimension 
         # (n_samples, n_colors, spatial_width, spatial_width)
     if denoise_sigma is not None:
