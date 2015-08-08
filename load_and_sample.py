@@ -3,6 +3,7 @@ The goal of this script is to load the .pkl version of a model and run a sampler
 """
 import cPickle as pkl
 import theano.tensor as T
+from theano.misc import pkl_utils
 import theano
 import numpy as np
 from argparse import ArgumentParser
@@ -28,8 +29,10 @@ save_path = 'output'
 n_samples = 49
 batch_size = 200
 
+
+
 with open(mainloop_fn, 'r') as f:
-    main_loop = pkl.load(f)
+    main_loop = pkl_utils.load(f)
 
 print "generating samples"
 base_fname_part1 = save_path + '/samples-' + dataset + '-'
