@@ -1,26 +1,29 @@
 """
-We can perturb the diffusion kernel by an arbitrary function r(x), so that
-we now sample from p^tilde(x) = (1 / Z) r(x) p(x). Here, we prepare such a function
-where r(x) is a classifier of the form r(x) = p(y_0|x), and we mix in the perturbation
-as r(x^t) = r(x) ** (T-t)/T
-"""
+We can perturb the diffusion kernel by an arbitrary function r(x), so that we
+now sample from p^tilde(x) = (1 / Z) r(x) p(x). Here, we prepare such a
+function where r(x) is a classifier of the form r(x) = p(y_0|x), and we mix
+in the perturbation pas r(x^t) = r(x) ** (T-t)/T """
 
 """
 Convolutional network
 Run the training of a classifier by doing:
 python perturb.py --num-epochs 50 --dataset <dataset>
 saves a file 'convmlp_<dataset>.zip'
-that is subsequently loaded to build the gradient function. 
+that is subsequently loaded to build the gradient function.
 ```
 Series of convolutional layers followed by a MLP
 Applied to CIFAR10
 Based off of Lenet code in github.com/mila-udem/blocks-examples/mnist_lenet
 """
+import theano
 import logging
-import numpy as np
 from argparse import ArgumentParser
 
-import theano
+import numpy as np
+
+
+
+
 from theano import tensor
 
 from blocks.algorithms import GradientDescent, Scale, AdaDelta
@@ -43,12 +46,13 @@ from blocks.monitoring import aggregation
 from blocks.utils import named_copy
 from blocks.serialization import dump, load
 
-from fuel.datasets import CIFAR10
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
 from fuel.transformers import Flatten, ScaleAndShift
 
+
 class ConvMLP(FeedforwardSequence, Initializable):
+
     """LeNet-like convolutional network.
 
     The class implements LeNet, which is a convolutional sequence with
@@ -84,6 +88,7 @@ class ConvMLP(FeedforwardSequence, Initializable):
         Border mode of convolution (similar for all layers).
 
     """
+
     def __init__(self, conv_activations, num_channels, image_shape,
                  filter_sizes, feature_maps, pooling_sizes,
                  top_mlp_activations, top_mlp_dims,
@@ -143,7 +148,7 @@ class ConvMLP(FeedforwardSequence, Initializable):
 
 
 def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
-         conv_sizes=None, pool_sizes=None, batch_size=500, dataset='MNIST'):
+          conv_sizes=None, pool_sizes=None, batch_size=500, dataset='MNIST'):
 
     print 'The dataset is ' + args.dataset
     # Initialize the training set
@@ -166,8 +171,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         dataset_test = IMAGENET(['test'], width=spatial_width)
         n_colors = 3
     else:
-        raise ValueError("Unknown dataset %s."%args.dataset)
-
+        raise ValueError("Unknown dataset %s." % args.dataset)
 
     train = dataset_train
     test = dataset_test
@@ -181,21 +185,22 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         iteration_scheme=ShuffledScheme(
             test.num_examples, batch_size))
 
-
     # make the training data 0 mean and variance 1
     # TODO compute mean and variance on full dataset, not minibatch
     Xbatch = next(train_stream.get_epoch_iterator())[0]
-    scl = (1./np.sqrt(np.mean((Xbatch-np.mean(Xbatch))**2))).astype('float32')
-    shft = (-np.mean(Xbatch*scl)).astype('float32')
+    scl = (
+        1. / np.sqrt(np.mean((Xbatch - np.mean(Xbatch))**2))).astype('float32')
+    shft = (-np.mean(Xbatch * scl)).astype('float32')
     # scale is applied before shift
-    train_stream = ScaleAndShift(train_stream, scl, shft, which_sources=('features',))
-    test_stream = ScaleAndShift(test_stream, scl, shft, which_sources=('features',))
-
+    train_stream = ScaleAndShift(
+        train_stream, scl, shft, which_sources=('features',))
+    test_stream = ScaleAndShift(
+        test_stream, scl, shft, which_sources=('features',))
 
     # ConvMLP Parameters
     image_size = (spatial_width, spatial_width)
     num_channels = n_colors
-    num_conv = 3 # Number of Convolutional Layers
+    num_conv = 3  # Number of Convolutional Layers
     if feature_maps is None:
         feature_maps = [20, 30, 30]
         if not len(feature_maps) == num_conv:
@@ -241,7 +246,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     # Normalize input and apply the convnet
     probs = convnet.apply(x)
     cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
-                      probs), 'cost')
+                                                      probs), 'cost')
     error_rate = named_copy(MisclassificationRate().apply(y.flatten(), probs),
                             'error_rate')
 
@@ -251,7 +256,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     from blocks.roles import OUTPUT
     vs = VariableFilter(roles=[OUTPUT])(cg.variables)
     vs1 = [v for v in vs if v.name.startswith('rectifier')]
-    vs1 = vs1[0: -2] # Only first two layers
+    vs1 = vs1[0: -2]  # Only first two layers
     cg = apply_dropout(cg, vs1, 0.5)
 
     # Train with AdaDelta
@@ -288,8 +293,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
     main_loop.run()
     classifier_fn = 'models/convmlp_' + dataset + '.zip'
     with open(classifier_fn, 'w') as f:
-        dump(convnet, f)    
-
+        dump(convnet, f)
 
 
 def build_classifier_grad(dataset, label=2):
@@ -303,7 +307,7 @@ def build_classifier_grad(dataset, label=2):
     classifier_fn : string
          Filename to load the brick containing the classifier
     label : int
-         Integer determining which class 
+         Integer determining which class
 
     FIXME: probably the case that you need to load in the relevant bricks
             modules to open the classifier file
@@ -314,14 +318,14 @@ def build_classifier_grad(dataset, label=2):
 
     x = theano.tensor.tensor4('features')
     y_hat = classifier_brick.apply(x)
-    
-    # Note y_hat vectorized giving an output shaped (batches, labels), 
+
+    # Note y_hat vectorized giving an output shaped (batches, labels),
     pk_grad = theano.gradient.jacobian(tensor.log(y_hat[:, label]), x)
     # FIXME: does dy[i]/dx[j] instead of dy[i]/dx[i]
 
     pk_grad_func1 = theano.function(inputs=[x],
                                     outputs=pk_grad,
-                                    allow_input_downcast=True) 
+                                    allow_input_downcast=True)
 
     def pk_grad_func(x):
         """
@@ -331,12 +335,13 @@ def build_classifier_grad(dataset, label=2):
         n_s = res.shape[0]
         di = np.diag_indices(n_s)
         return res[di]
-    
+
     pk_prob_func = theano.function(inputs=[x],
                                    outputs=y_hat[:, label],
                                    allow_input_downcast=True)
 
     return pk_prob_func, pk_grad_func
+
 
 def get_logr_grad(dataset, label=2):
     """
@@ -344,19 +349,6 @@ def get_logr_grad(dataset, label=2):
     """
     return build_classifier_grad(dataset, label=label)
 
-
-"""
-    if args.dataset == 'mnist':
-        width = 28
-        n_colors = 1
-        n_labels = 10
-    elif args.dataset == 'cifar10':
-        width = 32
-        n_colors = 3
-        n_labels = 10
-"""
-
-    
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -367,7 +359,8 @@ if __name__ == "__main__":
                         help="Destination to save the state of the training "
                              "process.")
     parser.add_argument("--feature-maps", type=int, nargs='+',
-                        default=[32, 32, 32], help="List of feature maps numbers.")
+                        default=[32, 32, 32],
+                        help="List of feature maps numbers.")
     parser.add_argument("--mlp-hiddens", type=int, nargs='+', default=[64],
                         help="List of numbers of hidden units for the MLP.")
     parser.add_argument("--conv-sizes", type=int, nargs='+', default=[5, 5, 5],

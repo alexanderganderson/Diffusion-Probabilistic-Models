@@ -7,7 +7,7 @@ import theano
 import theano.tensor as T
 
 from blocks.algorithms import (RMSProp, GradientDescent, CompositeRule,
-    RemoveNotFinite)
+                               RemoveNotFinite)
 from blocks.extensions import FinishAfter, Timing, Printing
 from blocks.extensions.monitoring import (TrainingDataMonitoring,
                                           DataStreamMonitoring)
@@ -26,14 +26,15 @@ from fuel.transformers import Flatten, ScaleAndShift
 import extensions
 import model
 import util
-from perturb import ConvMLP # r(x) block needs to be in namespace
+from perturb import ConvMLP  # r(x) block needs to be in namespace
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', default=512, type=int,
                         help='Batch size')
     parser.add_argument('--lr', default=1e-3, type=float,
-                        help='Initial learning rate. ' + \
+                        help='Initial learning rate. ' +
                         'Will be decayed until it\'s 1e-5.')
     parser.add_argument('--resume_file', default=None, type=str,
                         help='Name of saved model to continue training')
@@ -57,7 +58,8 @@ def parse_args():
     print model_args
 
     if not os.path.exists(args.output_dir):
-        raise IOError("Output directory '%s' does not exist. "%args.output_dir)
+        raise IOError("Output directory '%s' does not exist. " %
+                      args.output_dir)
     return args, model_args
 
 
@@ -74,7 +76,7 @@ if __name__ == '__main__':
         from blocks.serialization import continue_training
         continue_training(args.resume_file)
 
-    ## load the training data
+    # load the training data
     if args.dataset == 'MNIST':
         from fuel.datasets import MNIST
         dataset_train = MNIST(['train'], sources=('features',))
@@ -94,32 +96,33 @@ if __name__ == '__main__':
         dataset_test = IMAGENET(['test'], width=spatial_width)
         n_colors = 3
     else:
-        raise ValueError("Unknown dataset %s."%args.dataset)
+        raise ValueError("Unknown dataset %s." % args.dataset)
 
-    train_stream = Flatten(DataStream.default_stream(dataset_train,
-                              iteration_scheme=ShuffledScheme(
-                                  examples=dataset_train.num_examples,
-                                  batch_size=args.batch_size)))
+    train_stream = Flatten(DataStream.default_stream(
+                        dataset_train,
+                                                     iteration_scheme=ShuffledScheme(
+                                                         examples=dataset_train.num_examples,
+                                                         batch_size=args.batch_size)))
     test_stream = Flatten(DataStream.default_stream(dataset_test,
-                             iteration_scheme=ShuffledScheme(
-                                 examples=dataset_test.num_examples,
-                                 batch_size=args.batch_size))
-                             )
+                                                    iteration_scheme=ShuffledScheme(
+                                                        examples=dataset_test.num_examples,
+                                                        batch_size=args.batch_size))
+                          )
 
     # make the training data 0 mean and variance 1
     # TODO compute mean and variance on full dataset, not minibatch
     Xbatch = next(train_stream.get_epoch_iterator())[0]
-    scl = 1./np.sqrt(np.mean((Xbatch-np.mean(Xbatch))**2))
-    shft = -np.mean(Xbatch*scl)
+    scl = 1. / np.sqrt(np.mean((Xbatch - np.mean(Xbatch))**2))
+    shft = -np.mean(Xbatch * scl)
     # scale is applied before shift
     train_stream = ScaleAndShift(train_stream, scl, shft)
     test_stream = ScaleAndShift(test_stream, scl, shft)
 
-    ## initialize the model
+    # initialize the model
     dpm = model.DiffusionModel(spatial_width, n_colors, **model_args)
     dpm.initialize()
 
-    ## set up optimization
+    # set up optimization
     features = T.matrix('features', dtype=theano.config.floatX)
     cost = dpm.cost(features)
     blocks_model = Model(cost)
@@ -136,43 +139,44 @@ if __name__ == '__main__':
         cg = cg_nodropout
     step_compute = RMSProp(learning_rate=args.lr, max_scaling=1e10)
     algorithm = GradientDescent(step_rule=CompositeRule([RemoveNotFinite(),
-        step_compute]),
-        parameters=cg.parameters, cost=cost)
+                                                         step_compute]),
+                                parameters=cg.parameters, cost=cost)
     extension_list = []
     extension_list.append(
         SharedVariableModifier(step_compute.learning_rate,
-            extensions.decay_learning_rate,
-            after_batch=False,
-            every_n_batches=batches_per_epoch, ))
+                               extensions.decay_learning_rate,
+                               after_batch=False,
+                               every_n_batches=batches_per_epoch, ))
     extension_list.append(FinishAfter(after_n_epochs=100001))
 
-    ## set up logging
+    # set up logging
     extension_list.extend([Timing(), Printing()])
     model_dir = util.create_log_dir(args, dpm.name + '_' + args.dataset)
     model_save_name = os.path.join(model_dir, 'model.pkl')
     extension_list.append(
-        Checkpoint(model_save_name, every_n_batches=args.ext_every_n*batches_per_epoch, save_separately=['log']))
+        Checkpoint(model_save_name, every_n_batches=args.ext_every_n * batches_per_epoch, save_separately=['log']))
     # generate plots
     extension_list.append(extensions.PlotMonitors(model_dir,
-        every_n_batches=args.ext_every_n*batches_per_epoch, before_training=args.plot_before_training))
+                                                  every_n_batches=args.ext_every_n * batches_per_epoch, before_training=args.plot_before_training))
     test_batch = next(test_stream.get_epoch_iterator())[0]
     extension_list.append(extensions.PlotSamples(dpm, algorithm, test_batch, model_dir,
-        every_n_batches=args.ext_every_n*batches_per_epoch, before_training=args.plot_before_training))
+                                                 every_n_batches=args.ext_every_n * batches_per_epoch, before_training=args.plot_before_training))
     internal_state = dpm.internal_state(features)
     train_batch = next(train_stream.get_epoch_iterator())[0]
     # extension_list.append(
     #     extensions.PlotInternalState(dpm, blocks_model, internal_state, features, train_batch, model_dir,
-    #         every_n_batches=args.ext_every_n*batches_per_epoch, before_training=args.plot_before_training))
+    # every_n_batches=args.ext_every_n*batches_per_epoch,
+    # before_training=args.plot_before_training))
     extension_list.append(
         extensions.PlotParameters(dpm, blocks_model, model_dir,
-            every_n_batches=args.ext_every_n*batches_per_epoch, before_training=args.plot_before_training))
+                                  every_n_batches=args.ext_every_n * batches_per_epoch, before_training=args.plot_before_training))
     # extension_list.append(
     #     extensions.PlotGradients(dpm, blocks_model, algorithm, train_batch, model_dir,
     #         every_n_batches=args.ext_every_n*batches_per_epoch, before_training=args.plot_before_training))
-    # # console monitors
-    # # DEBUG -- incorporating train_monitor or test_monitor triggers a large number of
-    # # float64 vs float32 GPU warnings, although monitoring still works. I think this is a Blocks
-    # # bug. Uncomment this code to have more information during debugging/development.
+    # console monitors
+    # DEBUG -- incorporating train_monitor or test_monitor triggers a large number of
+    # float64 vs float32 GPU warnings, although monitoring still works. I think this is a Blocks
+    # bug. Uncomment this code to have more information during debugging/development.
     # train_monitor_vars = [cost]
     # norms, grad_norms = util.get_norms(blocks_model, algorithm.gradients)
     # train_monitor_vars.extend(norms + grad_norms)
@@ -183,10 +187,9 @@ if __name__ == '__main__':
     # test_monitor = DataStreamMonitoring(test_monitor_vars, test_stream, prefix='test', before_training=True)
     # extension_list.append(test_monitor)
 
-    ## train
+    # train
     sys.setrecursionlimit(10000000)
     main_loop = MainLoop(model=blocks_model, algorithm=algorithm,
                          data_stream=train_stream,
                          extensions=extension_list)
     main_loop.run()
-

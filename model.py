@@ -12,8 +12,10 @@ from blocks.bricks import application, Initializable, Random
 import regression
 import util
 
+
 class DiffusionModel(Initializable):
-    def __init__(self,
+    def __init__(
+            self,
             spatial_width,
             n_colors,
             trajectory_length=1000,
@@ -68,12 +70,12 @@ class DiffusionModel(Initializable):
 
         self.mlp = regression.MLP_conv_dense(
             n_layers_conv, n_layers_dense_lower, n_layers_dense_upper,
-            n_hidden_conv, n_hidden_dense_lower, n_hidden_dense_lower_output, n_hidden_dense_upper,
+            n_hidden_conv, n_hidden_dense_lower, n_hidden_dense_lower_output,
+            n_hidden_dense_upper,
             spatial_width, n_colors, n_scales, n_temporal_basis)
         self.temporal_basis = self.generate_temporal_basis(trajectory_length, n_temporal_basis)
         self.beta_arr = self.generate_beta_arr(step1_beta)
         self.children = [self.mlp]
-
 
     def generate_beta_arr(self, step1_beta):
         """
