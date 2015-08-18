@@ -21,14 +21,11 @@ from argparse import ArgumentParser
 
 import numpy as np
 
-
-
-
 from theano import tensor
 
-from blocks.algorithms import GradientDescent, Scale, AdaDelta
+from blocks.algorithms import GradientDescent, AdaDelta
 from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
-                           Softmax, Activation)
+                           Logistic)
 from blocks.bricks.conv import (
     ConvolutionalLayer, ConvolutionalSequence, Flattener)
 from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
@@ -44,11 +41,11 @@ from blocks.main_loop import MainLoop
 from blocks.model import Model
 from blocks.monitoring import aggregation
 from blocks.utils import named_copy
-from blocks.serialization import dump, load
+# from blocks.serialization import dump, load
 
 from fuel.schemes import ShuffledScheme
 from fuel.streams import DataStream
-from fuel.transformers import Flatten, ScaleAndShift
+from fuel.transformers import ScaleAndShift
 
 
 class ConvMLP(FeedforwardSequence, Initializable):
@@ -215,7 +212,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     # Use ReLUs everywhere and softmax for the final prediction
     conv_activations = [Rectifier() for _ in feature_maps]
-    mlp_activations = [Rectifier() for _ in mlp_hiddens] + [Softmax()]
+    mlp_activations = [Rectifier() for _ in mlp_hiddens] + [Logistic()]
     convnet = ConvMLP(conv_activations, num_channels, image_size,
                       filter_sizes=zip(conv_sizes, conv_sizes),
                       feature_maps=feature_maps,
