@@ -288,7 +288,7 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
         extensions=extensions)
 
     main_loop.run()
-    classifier_fn = 'models/convmlp_' + dataset + '.zip'
+    classifier_fn = 'models/' + dataset + '_classifier.zip'
     with open(classifier_fn, 'w') as f:
         dump(convnet, f)
 
@@ -309,7 +309,7 @@ def build_classifier_grad(dataset, label=2):
     FIXME: probably the case that you need to load in the relevant bricks
             modules to open the classifier file
     """
-    classifier_fn = 'models/convmlp_' + dataset + '.zip'
+    classifier_fn = 'models/' + dataset + '_classifier.zip'
     with open(classifier_fn, 'r') as f:
         classifier_brick = load(f)
 
