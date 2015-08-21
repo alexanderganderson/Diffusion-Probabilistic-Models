@@ -347,22 +347,27 @@ def build_classifier_grad(dataset, label=2):
     x = theano.tensor.tensor4('features')
     y_hat = classifier_brick.apply(x)
 
+    pk_grad = T.sum(T.log(y_hat[:, label]))  # Trick to get dy[i]/dx[i]
+    pk_grad_func = theano.function(inputs=[x],
+                                   outputs=pk_grad,
+                                   allow_input_downcast=True)
+
     # Note y_hat vectorized giving an output shaped (batches, labels),
-    pk_grad = theano.gradient.jacobian(tensor.log(y_hat[:, label]), x)
+#    pk_grad = theano.gradient.jacobian(tensor.log(y_hat[:, label]), x)
     # FIXME: does dy[i]/dx[j] instead of dy[i]/dx[i]
 
-    pk_grad_func1 = theano.function(inputs=[x],
-                                    outputs=pk_grad,
-                                    allow_input_downcast=True)
-
-    def pk_grad_func(x):
-        """
-        Takes diagonal of first two terms of derivative
-        """
-        res = pk_grad_func1(x)
-        n_s = res.shape[0]
-        di = np.diag_indices(n_s)
-        return res[di]
+#    pk_grad_func1 = theano.function(inputs=[x],
+#                                    outputs=pk_grad,
+#                                    allow_input_downcast=True)
+#
+#    def pk_grad_func(x):
+#        """
+#        Takes diagonal of first two terms of derivative
+#        """
+#        res = pk_grad_func1(x)
+#        n_s = res.shape[0]
+#        di = np.diag_indices(n_s)
+#        return res[di]
 
     pk_prob_func = theano.function(inputs=[x],
                                    outputs=y_hat[:, label],
