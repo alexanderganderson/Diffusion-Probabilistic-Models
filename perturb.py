@@ -20,6 +20,7 @@ import logging
 from argparse import ArgumentParser
 
 import numpy as np
+import os
 
 from theano import tensor
 
@@ -281,14 +282,14 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     model = Model(cost)
 
-    main_loop = MainLoop(
-        algorithm,
-        train_stream,
-        model=model,
-        extensions=extensions)
+    main_loop = MainLoop(algorithm, train_stream, model=model,
+                         extensions=extensions)
 
     main_loop.run()
-    classifier_fn = 'models/' + dataset + '_classifier.zip'
+    model_dir = 'models/'
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    classifier_fn = os.path.join(model_dir, dataset + '_classifier.zip')
     with open(classifier_fn, 'w') as f:
         dump(convnet, f)
 

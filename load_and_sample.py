@@ -1,6 +1,15 @@
 """
 The goal of this script is to load the .pkl version of a model and run a
 sampler
+
+Requires the following:
+
+(1) There exists a file models/dataset_classifier.zip that contains the
+result from training a classifier from perturb.py
+
+(2) There exists a file models/model_dataset.pkl that contains the main
+    mainloop from running train.py. Note that if different extensions were
+    run, then the line extracting out the plot samples extension might fail.
 """
 # import theano.tensor as T
 from theano.misc import pkl_utils
@@ -94,19 +103,7 @@ X = X[:n_samples].reshape(
 #                               allow_input_downcast=True)
 
 get_mu_sigma = plotsamples_ext.get_mu_sigma
-r, logr_grad = perturb.get_logr_grad(dataset)
 
-# Sets a default value to have r(x) = 0
-#    self.r = lambda x: np.zeros((self.X.shape[0],))
-#    self.logr_grad = lambda x: np.zeros_like(self.X).astype(theano.config.floatX)
-
-# Generate Samples with a perturbation
-sampler.generate_samples(model, get_mu_sigma,
-                         n_samples=n_samples, inpaint=False,
-                         denoise_sigma=None,
-                         logr_grad=logr_grad, X_true=X,
-                         base_fname_part1=base_fname_part1,
-                         base_fname_part2=base_fname_part2)
 
 # Generate the samples with nothing special
 sampler.generate_samples(model, get_mu_sigma,
@@ -115,3 +112,14 @@ sampler.generate_samples(model, get_mu_sigma,
                          logr_grad=None, X_true=None,
                          base_fname_part1=base_fname_part1,
                          base_fname_part2=base_fname_part2)
+
+
+# Generate Samples with a perturbation
+for i in range(10):
+    r, logr_grad = perturb.get_logr_grad(dataset, label=i)
+    sampler.generate_samples(model, get_mu_sigma,
+                             n_samples=n_samples, inpaint=False,
+                             denoise_sigma=None,
+                             logr_grad=logr_grad, X_true=X,
+                             base_fname_part1=base_fname_part1+'label%02d' % i,
+                             base_fname_part2=base_fname_part2)
