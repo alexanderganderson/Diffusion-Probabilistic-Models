@@ -23,13 +23,15 @@ import numpy as np
 import os
 
 from theano import tensor
+import theano.tensor as T
 
 from blocks.algorithms import GradientDescent, AdaDelta
 from blocks.bricks import (MLP, Rectifier, Initializable, FeedforwardSequence,
                            Logistic)
 from blocks.bricks.conv import (
     ConvolutionalLayer, ConvolutionalSequence, Flattener)
-from blocks.bricks.cost import CategoricalCrossEntropy, MisclassificationRate
+from blocks.bricks.cost import (CategoricalCrossEntropy, BinaryCrossEntropy,
+                                MisclassificationRate)
 from blocks.extensions import FinishAfter, Timing, Printing, ProgressBar
 from blocks.extensions.monitoring import (DataStreamMonitoring,
                                           TrainingDataMonitoring)
@@ -243,8 +245,36 @@ def train(save_to, num_epochs, feature_maps=None, mlp_hiddens=None,
 
     # Normalize input and apply the convnet
     probs = convnet.apply(x)
-    cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
-                                                      probs), 'cost')
+
+    def binary_ce_oneshot(y, y_hat):
+        """
+        Returns cost for binary cross entropy
+
+        ----------
+        Parameters
+        ----------
+
+        y : theano.tensor.lmatrix (n_bat, 1)
+            Target labels as an array of integers
+        y_hat : theano.tensor.matrix (n_bat, n_classes)
+            Logistic estimator for y (i.e. train independent classifiers)
+
+        -------
+        Returns
+        -------
+
+        cost : theano scalar
+            Binary Cross entropy after converting each entry of y to a
+            one hot vector
+        """
+        y_onehot = T.eye(y_hat.shape[1])[y.flatten()]
+        cost = BinaryCrossEntropy().apply(y_onehot, y_hat)
+        return cost
+
+    cost = named_copy(binary_ce_oneshot(y, probs), 'cost')
+
+#    cost = named_copy(CategoricalCrossEntropy().apply(y.flatten(),
+#                                                      probs), 'cost')
     error_rate = named_copy(MisclassificationRate().apply(y.flatten(), probs),
                             'error_rate')
 
