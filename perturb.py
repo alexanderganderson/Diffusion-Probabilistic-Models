@@ -347,7 +347,7 @@ def build_classifier_grad(dataset, label=2):
     x = theano.tensor.tensor4('features')
     y_hat = classifier_brick.apply(x)
 
-    pk_grad = T.sum(T.log(y_hat[:, label]))  # Trick to get dy[i]/dx[i]
+    pk_grad = T.grad(T.sum(T.log(y_hat[:, label])), x)  # Trick for dy[i]/dx[i]
     pk_grad_func = theano.function(inputs=[x],
                                    outputs=pk_grad,
                                    allow_input_downcast=True)
