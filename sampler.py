@@ -103,7 +103,10 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
                               mask, XT, rng,
                               model.trajectory_length, logr_grad)
 
-        beta_forward = model.get_beta_forward(t)
+        beta_forward = model.get_beta_forward(
+            np.array([[t]]).astype('float32')
+            )
+
         Xmid = (Xmid*np.sqrt(1. - beta_forward)
                 + rng.normal(size=Xmid.shape) * np.sqrt(beta_forward))
 
