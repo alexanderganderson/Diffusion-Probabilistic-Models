@@ -106,16 +106,16 @@ get_mu_sigma = plotsamples_ext.get_mu_sigma
 
 
 # Generate the samples with nothing special
-# sampler.generate_samples(model, get_mu_sigma,
-#                          n_samples=n_samples, inpaint=False,
-#                          denoise_sigma=None,
-#                          logr_grad=None, X_true=None,
-#                          base_fname_part1=base_fname_part1,
-#                          base_fname_part2=base_fname_part2)
+sampler.generate_samples(model, get_mu_sigma,
+                         n_samples=n_samples, inpaint=False,
+                         denoise_sigma=None,
+                         logr_grad=None, X_true=None,
+                         base_fname_part1=base_fname_part1,
+                         base_fname_part2=base_fname_part2)
 
 
 # Generate Samples with a perturbation
-for i in [6]:  # range(10):
+for i in range(10):
     r, logr_grad = perturb.get_logr_grad(dataset, label=i)
     X0 = sampler.generate_samples(
         model, get_mu_sigma,

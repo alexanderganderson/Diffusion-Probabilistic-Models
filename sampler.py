@@ -104,14 +104,16 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
                                         outputs=model.get_beta_forward(tt))
 
     for t in xrange(model.trajectory_length-1, 0, -1):
-        Xmid = diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma,
-                              mask, XT, rng,
-                              model.trajectory_length, logr_grad)
+        extra_steps = 3
+        for _ in range(extra_steps):
+            Xmid = diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma,
+                                  mask, XT, rng,
+                                  model.trajectory_length, logr_grad)
 
-        beta_forward = get_beta_forward1(np.array([[t]]).astype('float32'))
+            beta_forward = get_beta_forward1(np.array([[t]]).astype('float32'))
 
-        Xmid = (Xmid*np.sqrt(1. - beta_forward)
-                + rng.normal(size=Xmid.shape) * np.sqrt(beta_forward))
+            Xmid = (Xmid*np.sqrt(1. - beta_forward)
+                    + rng.normal(size=Xmid.shape) * np.sqrt(beta_forward))
 
         Xmid = diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma,
                               mask, XT, rng,
