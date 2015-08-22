@@ -99,7 +99,7 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
 
     Xmid = XT.copy()
 
-    tt = theano.tensor('t')
+    tt = theano.tensor.matrix('t')
     get_beta_forward1 = theano.function(inputs=[tt],
                                         outputs=model.get_beta_forward(tt))
 
