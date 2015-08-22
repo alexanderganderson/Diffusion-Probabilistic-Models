@@ -32,7 +32,7 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
     if logr_grad is not None:
         # mu += (sigma * logr_grad(mu) * (trajectory_length - 1 - t)
         #        / (1. * trajectory_length - 1))
-        mu += sigma * logr_grad(mu) * 8
+        mu += sigma * logr_grad(mu)
 
         # note mu, sigma have dimension
         # (n_samples, n_colors, spatial_width, spatial_width)
@@ -94,8 +94,8 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
     if X_true is not None:
         viz.plot_images(X_true, base_fname_part1 + '_true' + base_fname_part2)
     viz.plot_images(XT, base_fname_part1
-                        + '_t%04d' % model.trajectory_length
-                        + base_fname_part2)
+                    + '_t%04d' % model.trajectory_length
+                    + base_fname_part2)
 
     Xmid = XT.copy()
     for t in xrange(model.trajectory_length-1, 0, -1):
@@ -103,8 +103,11 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
                               mask, XT, rng,
                               model.trajectory_length, logr_grad)
         if np.mod(model.trajectory_length-t,
-            int(np.ceil(model.trajectory_length/(num_intermediate_plots+2.)))) == 0:
-            viz.plot_images(Xmid, base_fname_part1 + '_t%04d' % t + base_fname_part2)
+                  int(np.ceil(model.trajectory_length
+                              / (num_intermediate_plots+2.)))) == 0:
+            viz.plot_images(Xmid, base_fname_part1 + '_t%04d' % t
+                            + base_fname_part2)
 
     X0 = Xmid
     viz.plot_images(X0, base_fname_part1 + '_t%04d' % 0 + base_fname_part2)
+    return X0
