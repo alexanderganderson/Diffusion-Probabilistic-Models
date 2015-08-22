@@ -107,7 +107,7 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
         Xmid = (Xmid*np.sqrt(1. - beta_forward)
                 + rng.normal(size=Xmid.shape) * np.sqrt(beta_forward))
 
-        Xmid = diffusion_step(Xmid, t-1, get_mu_sigma, denoise_sigma,
+        Xmid = diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma,
                               mask, XT, rng,
                               model.trajectory_length, logr_grad)
 
