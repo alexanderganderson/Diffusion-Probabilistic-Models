@@ -115,7 +115,7 @@ sampler.generate_samples(model, get_mu_sigma,
 
 
 # Generate Samples with a perturbation
-for i in range(10):
+for i in [6]:  # range(10):
     r, logr_grad = perturb.get_logr_grad(dataset, label=i)
     sampler.generate_samples(model, get_mu_sigma,
                              n_samples=n_samples, inpaint=False,
