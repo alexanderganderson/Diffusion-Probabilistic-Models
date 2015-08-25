@@ -100,8 +100,8 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
     Xmid = XT.copy()
 
     tt = theano.tensor.matrix('t')
-    get_beta_forward1 = theano.function(inputs=[tt],
-                                        outputs=model.get_beta_forward(tt))
+    get_beta_forward = theano.function(inputs=[tt],
+                                       outputs=model.get_beta_forward(tt))
 
     for t in xrange(model.trajectory_length-1, 0, -1):
         extra_steps = 3
@@ -110,9 +110,10 @@ def generate_samples(model, get_mu_sigma, n_samples=36,
                                   mask, XT, rng,
                                   model.trajectory_length, logr_grad)
 
-            beta_forward = get_beta_forward1(np.array([[t]]).astype('float32'))
+            beta_forward = get_beta_forward(np.array([[t]]).astype('float32'))
 
             Xmid = (Xmid*np.sqrt(1. - beta_forward)
+                    + np.sqrt(beta_forward) * logr_grad(Xmid)
                     + rng.normal(size=Xmid.shape) * np.sqrt(beta_forward))
 
         Xmid = diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma,
