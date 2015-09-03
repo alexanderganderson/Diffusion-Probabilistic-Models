@@ -19,44 +19,44 @@ import theano.tensor as T
 from sklearn_theano.feature_extraction.caffe.googlenet import create_theano_expressions
 
 
-def build_classifier_grad(dataset, label=2):
+def build_classifier_grad(dataset, label=2, insert_sigmoid=False):
     """
     Loads a classifier, and builds functions p(y_label|x) and
-        d p(y_label|x)/dx where x is the image
+        d log(p(y_label|x))/dx where x is the image
 
     ----------
     Parameters
     ----------
-    classifier_fn : string
-         Filename to load the brick containing the classifier
+    dataset : string
+         Dataset name, this function only works with IMAGENET
     label : int
          Integer determining which class
+    insert_sigmoid : bool
+        Flag for replacing Softmax with Sigmoid.
     """
-    b, x = create_theano_expressions()
-    x.name = 'features'
-    # b,c,0,1
-    logistic_input = b['pool5/7x7_s1']
-    # b, c
-    # TODO: not sure if best to mean before or after logistic
-    # doesn't matter is images are correct size
-    li = logistic_input.mean(axis=(2, 3))
+    if dataset != 'IMAGENET':
+        raise ValueError('This perturbation only works with IMAGENET')
+    blobs, data_inputs = create_theano_expressions()
+    # blobs are: b,c,0,1
+    if insert_sigmoid:
+        y_hat = T.nnet.sigmoid(blobs['loss3/classifier'].mean(axis=(2, 3)))
+    else:
+        y_hat = blobs['loss3/loss3'].mean(axis=(2, 3))
+    pk_grad = T.grad(T.sum(T.log(y_hat[:, label])), data_inputs)  # Trick for dy[i]/dx[i]
 
-    y_hat = T.nnet.sigmoid(li)
-
-    pk_grad = T.grad(T.sum(T.log(y_hat[:, label])), x)  # Trick for dy[i]/dx[i]
-    pk_grad_func = theano.function(inputs=[x],
+    pk_grad_func = theano.function(inputs=[data_inputs],
                                    outputs=pk_grad,
                                    allow_input_downcast=True)
 
-    pk_prob_func = theano.function(inputs=[x],
+    pk_prob_func = theano.function(inputs=[data_inputs],
                                    outputs=y_hat[:, label],
                                    allow_input_downcast=True)
 
     return pk_prob_func, pk_grad_func
 
 
-def get_logr_grad(dataset, label=2):
+def get_logr_grad(dataset, label=2, insert_sigmoid=False):
     """
     Interface to extensions.py which asks for this function
     """
-    return build_classifier_grad(dataset, label=label)
+    return build_classifier_grad(dataset, label=label, insert_sigmoid=insert_sigmoid)
