@@ -109,15 +109,6 @@ X = X[:n_samples].reshape(
 get_mu_sigma = plotsamples_ext.get_mu_sigma
 
 
-# Generate the samples with nothing special
-sampler.generate_samples(model, get_mu_sigma,
-                         n_samples=n_samples, inpaint=False,
-                         denoise_sigma=None,
-                         logr_grad=None, X_true=None,
-                         base_fname_part1=base_fname_part1,
-                         base_fname_part2=base_fname_part2)
-
-
 def resize(arr, d=224):
     """
     Takes in an array and resizes it as necessary
@@ -171,3 +162,12 @@ for i in range(1):
         base_fname_part1=base_fname_part1+'label%02d' % i,
         base_fname_part2=base_fname_part2)
     print r(X0)
+
+# Generate the samples with nothing special
+sampler.generate_samples(model, get_mu_sigma,
+                         n_samples=n_samples, inpaint=False,
+                         denoise_sigma=None,
+                         logr_grad=None, X_true=None,
+                         base_fname_part1=base_fname_part1,
+                         base_fname_part2=base_fname_part2)
+
