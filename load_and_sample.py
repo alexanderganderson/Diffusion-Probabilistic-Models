@@ -23,19 +23,21 @@ from fuel.transformers import Flatten, ScaleAndShift
 
 import perturb
 from perturb import ConvMLP
+
+import imagenenet_perturb
 import sampler
 import util
 
 parser = ArgumentParser("An example of training a convolutional network ")
 
-parser.add_argument('--dataset', type=str, default='MNIST',
+parser.add_argument('--dataset', type=str, default='IMAGENET',
                     help='Name of dataset to use.')
 args = parser.parse_args()
 dataset = args.dataset
 
 mainloop_fn = 'models/model_' + dataset + '.pkl'
 save_path = 'output'
-n_samples = 49
+n_samples = 1
 batch_size = 200
 
 with open(mainloop_fn, 'r') as f:
@@ -115,8 +117,18 @@ sampler.generate_samples(model, get_mu_sigma,
 
 
 # Generate Samples with a perturbation
-for i in range(10):
-    r, logr_grad = perturb.get_logr_grad(dataset, label=i)
+for i in range(1):
+
+    r1, logr_grad1 = imagenenet_perturb.get_logr_grad(dataset, label=i)
+
+    def r(X):
+        return r1((X - shft) / scl)
+
+    def logr_grad(X):
+        return logr_grad1((X - shft) / scl)
+
+#    r, logr_grad = perturb.get_logr_grad(dataset, label=i)
+
     X0 = sampler.generate_samples(
         model, get_mu_sigma,
         n_samples=n_samples, inpaint=False,
