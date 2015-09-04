@@ -94,8 +94,8 @@ class IMAGENET(AbstractDataStream):
     def load_image(self, idx):
         filename = self.X[idx]
 
-        import Image
-        import ImageOps
+        import PIL.Image as Image
+        import PIL.ImageOps as ImageOps
         # print "loading ", self.X[idx]
         image = Image.open(self.X[idx])
 
