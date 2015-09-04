@@ -39,7 +39,7 @@ dataset = args.dataset
 
 mainloop_fn = 'models/model_' + dataset + '.pkl'
 save_path = 'output'
-n_samples = 1
+n_samples = 4
 batch_size = 200
 
 with open(mainloop_fn, 'r') as f:
