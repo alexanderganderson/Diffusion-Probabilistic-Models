@@ -25,7 +25,7 @@ from fuel.transformers import Flatten, ScaleAndShift
 import perturb
 from perturb import ConvMLP
 
-import imagenenet_perturb
+import imagenet_perturb
 import sampler
 import util
 
