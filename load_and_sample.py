@@ -16,6 +16,7 @@ from theano.misc import pkl_utils
 import theano
 import numpy as np
 from argparse import ArgumentParser
+import PIL.Image
 
 from fuel.streams import DataStream
 from fuel.schemes import ShuffledScheme
@@ -27,6 +28,7 @@ from perturb import ConvMLP
 import imagenenet_perturb
 import sampler
 import util
+
 
 parser = ArgumentParser("An example of training a convolutional network ")
 
@@ -116,16 +118,48 @@ sampler.generate_samples(model, get_mu_sigma,
                          base_fname_part2=base_fname_part2)
 
 
+def resize(arr, d=224):
+    """
+    Takes in an array and resizes it as necessary
+    ----------
+    Parameters
+    ----------
+    arr - array, shape (N, K, H, W)
+        Input image of dimensions H, W
+    -------
+    Returns
+    -------
+    new_arr, array, shape (N, K, H, W)
+        Resized image where images are now shape (d, d)
+    """
+    N, K, _, _ = arr.shape
+    new_arr = np.zeros((N, K, d, d)).astype('float32')
+    for i in range(N):
+        img = arr[i].astype('float32')
+        img = img.transpose(1, 2, 0)
+        m1 = img.min()
+        m2 = img.max()
+        img = (img - m1)/(m2-m1) * 255.
+        pimg = PIL.Image.fromarray(img.astype('uint8'))
+        pimg = pimg.resize((d, d), PIL.Image.ANTIALIAS)
+        new_arr[i] = np.array(pimg).transpose(2, 0, 1).astype('float32')
+        new_arr[i] = m1 + (m2-m1) / 255. * new_arr[i]
+    return new_arr
+
 # Generate Samples with a perturbation
 for i in range(1):
 
     r1, logr_grad1 = imagenenet_perturb.get_logr_grad(dataset, label=i)
 
     def r(X):
-        return r1((X - shft) / scl)
+        X0 = resize((X - shft) / scl, d=224)
+        return r1(X0)
 
     def logr_grad(X):
-        return logr_grad1((X - shft) / scl)
+        X0 = resize((X - shft) / scl, d=224)
+        g0 = logr_grad1(X0)
+
+        return (1. / scl) * resize(g0, d=spatial_width)
 
 #    r, logr_grad = perturb.get_logr_grad(dataset, label=i)
 
