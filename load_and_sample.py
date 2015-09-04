@@ -140,7 +140,7 @@ def resize(arr, d=224):
 # Generate Samples with a perturbation
 for i in range(1):
 
-    r1, logr_grad1 = imagenenet_perturb.get_logr_grad(dataset, label=i)
+    r1, logr_grad1 = imagenet_perturb.get_logr_grad(dataset, label=i)
 
     def r(X):
         X0 = resize((X - shft) / scl, d=224)
