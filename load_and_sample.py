@@ -1,5 +1,5 @@
 """
-The goal of this script is to load the .pkl version of a model and run a
+The goal of this script is to load the .pkl version of a DPM model and run a
 sampler
 
 Requires the following:
@@ -11,36 +11,37 @@ result from training a classifier from perturb.py
     mainloop from running train.py. Note that if different extensions were
     run, then the line extracting out the plot samples extension might fail.
 """
-# import theano.tensor as T
-from theano.misc import pkl_utils
-# import theano
+
 import numpy as np
 from argparse import ArgumentParser
 
+from theano.misc import pkl_utils
 from fuel.streams import DataStream
 from fuel.schemes import ShuffledScheme
 from fuel.transformers import Flatten, ScaleAndShift
 
-import perturb
-from perturb import ConvMLP
-
-import imagenet_perturb
 import sampler
 
 
-parser = ArgumentParser("An example of training a convolutional network ")
+parser = ArgumentParser("Perturb a DPM")
 
 parser.add_argument('--dataset', type=str, default='IMAGENET',
                     help='Name of dataset to use.')
+parser.add_argument('--save_path', type=str, default='output',
+                    help='Path to save output')
+parser.add_argument('--n_samples', type=int, default=4,
+                    help='Number of samples to generate')
+
 args = parser.parse_args()
-dataset = args.dataset
+dataset, save_path = args.dataset, args.save_path
 
-mainloop_fn = 'models/model_{}.pkl'.format(dataset)
-save_path = 'output'
+dpm_fn = 'models/model_{}.pkl'.format(dataset)
 n_samples = 4
-batch_size = 200
+batch_size = 200  # For computing normalization for dataset
+labels = [105]
 
-with open(mainloop_fn, 'r') as f:
+# Load the DPM (Saved as a Blocks MainLoop)
+with open(dpm_fn, 'r') as f:
     main_loop = pkl_utils.load(f)
 
 print "generating samples"
@@ -52,26 +53,30 @@ plotsamples_ext = main_loop.extensions[6]
 
 model = plotsamples_ext.model
 
-if dataset == 'MNIST':
-    from fuel.datasets import MNIST
-    dataset_train = MNIST(['train'])
-    dataset_test = MNIST(['test'])
-    n_colors = 1
-    spatial_width = 28
-elif dataset == 'CIFAR10':
-    from fuel.datasets import CIFAR10
-    dataset_train = CIFAR10(['train'])
-    dataset_test = CIFAR10(['test'])
-    n_colors = 3
-    spatial_width = 32
-elif dataset == 'IMAGENET':
-    from imagenet_data import IMAGENET
-    spatial_width = 128
-    dataset_train = IMAGENET(['train'], width=spatial_width)
-    dataset_test = IMAGENET(['test'], width=spatial_width)
-    n_colors = 3
-else:
-    raise ValueError("Unknown dataset %s." % args.dataset)
+
+def get_dataset(dataset):
+    """
+    Returns
+    -------
+    dataset_train : fuel dataset
+        Training set
+    dataset_test : fuel dataset
+        Test set
+    """
+    if dataset == 'MNIST':
+        from fuel.datasets import MNIST
+        return MNIST(['train']), MNIST(['test'])
+    elif dataset == 'CIFAR10':
+        from fuel.datasets import CIFAR10
+        return CIFAR10(['train']), CIFAR10(['test'])
+    elif dataset == 'IMAGENET':
+        from imagenet_data import IMAGENET
+        return (IMAGENET(['train'], width=model.spatial_width),
+                IMAGENET(['test'], width=model.spatial_width))
+    else:
+        raise ValueError("Unknown dataset {}".format(args.dataset))
+
+(dataset_train, dataset_test) = get_dataset(dataset)
 
 train_stream = Flatten(DataStream.default_stream(
     dataset_train,
@@ -107,11 +112,14 @@ X = X[:n_samples].reshape(
 get_mu_sigma = plotsamples_ext.get_mu_sigma
 
 # Generate Samples with a perturbation
-for i in range(1):
+for i in labels:
     if dataset == 'IMAGENET':
+        import imagenet_perturb
         r, logr_grad = imagenet_perturb.get_logr_grad(
-            dataset, shft, scl, spatial_width, label=i)
+            dataset, shft, scl, model.spatial_width, label=i)
     else:
+        import perturb
+        from perturb import ConvMLP  # Strange thing with blocks
         r, logr_grad = perturb.get_logr_grad(dataset, label=i)
 
     X0 = sampler.generate_samples(

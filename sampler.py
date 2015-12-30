@@ -11,7 +11,7 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
     ----------
     Parameters
     ----------
-    Xmid : array
+    Xmid : array, shape (n_samples, n_colors, spatial_width, spatial_width)
         Current value of X
     t : int
         Current timestep in diffusion
@@ -33,9 +33,8 @@ def diffusion_step(Xmid, t, get_mu_sigma, denoise_sigma, mask, XT, rng,
         # mu += (sigma * logr_grad(mu) * (trajectory_length - 1 - t)
         #        / (1. * trajectory_length - 1))
         mu += sigma * logr_grad(mu)
+        # note mu, sigma have same dimension as X
 
-        # note mu, sigma have dimension
-        # (n_samples, n_colors, spatial_width, spatial_width)
     if denoise_sigma is not None:
         sigma_new = (sigma**-2 + denoise_sigma**-2)**-0.5
         mu_new = (mu * sigma_new**2 * sigma**-2
